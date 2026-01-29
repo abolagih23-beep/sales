@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini-Mart – Staff Accountability</title>
+
+<style>
+body{font-family:'Segoe UI',sans-serif;margin:0;background:#f0f4f8;transition:.5s}
+body.dark{background:#1e1e1e;color:#fff}
+
+header{background:#4facfe;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
+body.dark header{background:#00bfff}
+header h1{margin:0;font-size:22px}
+
+.theme-toggle,.logout-btn{
+  cursor:pointer;font-size:14px;
+  padding:6px 12px;border-radius:6px;
+  border:none;font-weight:bold
+}
+.theme-toggle{background:#fff;color:#333}
+.logout-btn{background:#ff6b6b;color:#fff}
+.logout-btn:hover{background:#ff4d4d}
+
+main{padding:20px;max-width:1000px;margin:auto}
+
+.filters{margin-bottom:15px}
+.filters select{
+  padding:8px;border-radius:6px;
+  border:1px solid #ccc;font-size:14px
+}
+body.dark .filters select{background:#333;color:#fff;border:1px solid #555}
+
+table{
+  width:100%;border-collapse:collapse;
+  background:#fff;border-radius:8px;
+  overflow:hidden;box-shadow:0 6px 15px rgba(0,0,0,.1)
+}
+body.dark table{background:#2b2b2b}
+
+th,td{padding:12px;border-bottom:1px solid #ddd;text-align:left}
+body.dark th,body.dark td{border-bottom:1px solid #444}
+
+th{background:#4facfe;color:#fff}
+body.dark th{background:#00bfff}
+
+.no-sales{margin-top:15px;color:#555}
+body.dark .no-sales{color:#ccc}
+
+.links{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap}
+.links a{
+  padding:10px 15px;
+  background:#4facfe;color:#fff;
+  border-radius:8px;text-decoration:none;font-weight:bold
+}
+.links a:hover{background:#00f2fe;color:#333}
+body.dark .links a{background:#00bfff}
+</style>
+</head>
+
+<body>
+<header>
+  <h1>Staff Accountability</h1>
+  <div>
+    <span class="theme-toggle" onclick="toggleTheme()">🌙 Theme</span>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<main>
+
+  <div class="filters">
+    <select id="filterStaff"></select>
+  </div>
+
+  <div id="salesContainer"></div>
+
+  <div class="links">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="product-list.html">Product List</a>
+    <a href="add-product.html">Add Product</a>
+    <a href="record-sale.html">Record Sale</a>
+  </div>
+
+</main>
+
+<script>
+/* ===============================
+   THEME
+================================ */
+if(sessionStorage.getItem('darkMode')==='true'){
+  document.body.classList.add('dark')
+}
+function toggleTheme(){
+  document.body.classList.toggle('dark')
+  sessionStorage.setItem('darkMode',document.body.classList.contains('dark'))
+}
+
+/* ===============================
+   AUTH CHECK (ADMIN ONLY)
+================================ */
+const role = sessionStorage.getItem('role')
+const username = sessionStorage.getItem('username')
+
+if(!username || role!=='admin'){
+  alert('Access denied. Admin only.')
+  window.location.href='dashboard.html'
+}
+
+/* ===============================
+   LOAD SALES
+================================ */
+function getSales(){
+  return JSON.parse(sessionStorage.getItem('sales') || '[]')
+}
+
+/* ===============================
+   STAFF FILTER
+================================ */
+const filterStaff=document.getElementById('filterStaff')
+
+function populateStaffFilter(){
+  const sales=getSales()
+  const staff=new Set(sales.map(s=>s.staff))
+
+  filterStaff.innerHTML='<option value="">All Staff</option>'
+  staff.forEach(name=>{
+    const o=document.createElement('option')
+    o.value=name
+    o.textContent=name
+    filterStaff.appendChild(o)
+  })
+}
+
+filterStaff.addEventListener('change',renderSales)
+
+/* ===============================
+   RENDER SALES
+================================ */
+function renderSales(){
+  const sales=getSales()
+  const staffFilter=filterStaff.value
+  const container=document.getElementById('salesContainer')
+
+  const filtered=sales.filter(s=>staffFilter ? s.staff===staffFilter : true)
+
+  if(filtered.length===0){
+    container.innerHTML='<div class="no-sales">No sales recorded.</div>'
+    return
+  }
+
+  let html=`<table>
+    <thead>
+      <tr>
+        <th>Staff</th>
+        <th>Product</th>
+        <th>Qty</th>
+        <th>Price (₦)</th>
+        <th>Total (₦)</th>
+        <th>Date</th>
+      </tr>
+    </thead><tbody>`
+
+  filtered.forEach(s=>{
+    const qty=Number(s.quantity)||0
+    const price=Number(s.price)||0
+    const total=qty*price
+    const date=new Date(s.date)
+
+    html+=`
+    <tr>
+      <td>${s.staff}</td>
+      <td>${s.product}</td>
+      <td>${qty}</td>
+      <td>${price.toLocaleString()}</td>
+      <td>${total.toLocaleString()}</td>
+      <td>${date.toLocaleString()}</td>
+    </tr>`
+  })
+
+  html+='</tbody></table>'
+  container.innerHTML=html
+}
+
+/* ===============================
+   LOGOUT
+================================ */
+function logout(){
+  if(confirm('Logout now?')){
+    sessionStorage.clear()
+    window.location.href='index.html'
+  }
+}
+
+/* ===============================
+   INIT + LIVE UPDATE
+================================ */
+populateStaffFilter()
+renderSales()
+
+window.addEventListener('storage',()=>{
+  populateStaffFilter()
+  renderSales()
+})
+</script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini-Mart – Record Sale</title>
+<style>
+body{font-family:'Segoe UI',sans-serif;margin:0;background:#f0f4f8;transition:.5s}
+body.dark{background:#1e1e1e;color:#fff}
+header{background:#4facfe;color:white;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
+body.dark header{background:#00bfff}
+main{padding:20px;max-width:900px;margin:auto}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}
+.filters input,.filters select{padding:8px;border-radius:6px;border:1px solid #ccc}
+body.dark .filters input,body.dark .filters select{background:#333;color:#fff;border:1px solid #555}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 6px 15px rgba(0,0,0,.1)}
+body.dark table{background:#2b2b2b}
+th,td{padding:12px;border-bottom:1px solid #ddd}
+body.dark th,body.dark td{border-bottom:1px solid #444}
+th{background:#4facfe;color:white}
+body.dark th{background:#00bfff}
+button{padding:6px 10px;border:none;border-radius:6px;background:#4facfe;color:white;cursor:pointer}
+.message{margin-top:10px;color:red}
+.links{margin-top:20px;display:flex;gap:10px}
+.links a{padding:10px 15px;background:#4facfe;color:white;border-radius:8px;text-decoration:none;font-weight:bold}
+.links a:hover{background:#00f2fe;color:#333}
+body.dark .links a{background:#00bfff}
+body.dark .links a:hover{background:#4facfe;color:#fff}
+#welcome{margin-bottom:15px;font-size:16px;font-weight:bold}
+</style>
+</head>
+<body>
+<header>
+  <h1>Record Sale</h1>
+  <span onclick="toggleTheme()" style="cursor:pointer">🌙 Theme</span>
+</header>
+
+<main>
+  <div id="welcome"></div>
+  <div class="filters">
+    <input id="searchName" placeholder="Search product" oninput="renderProducts()">
+    <select id="filterCategory" onchange="renderProducts()">
+      <option value="">All Categories</option>
+      <option>Dairy</option><option>Bakery</option>
+      <option>Beverages</option><option>Grains</option><option>Other</option>
+    </select>
+  </div>
+  <div id="tableContainer"></div>
+  <div class="links">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="product-list.html">Product List</a>
+  </div>
+</main>
+
+<script>
+/* THEME */
+if(sessionStorage.getItem('darkMode')==='true') document.body.classList.add('dark');
+function toggleTheme(){
+  document.body.classList.toggle('dark');
+  sessionStorage.setItem('darkMode',document.body.classList.contains('dark'));
+}
+
+/* AUTH */
+const username = sessionStorage.getItem('username') || 'staff';
+const role = sessionStorage.getItem('role') || 'staff';
+document.getElementById('welcome').textContent = `Welcome, ${username} (${role})`;
+
+/* SESSION STORAGE KEYS */
+const SESSION_PRODUCTS_KEY = 'recordProducts'; // Runtime for this page
+const ADMIN_PRODUCTS_KEY = 'products';          // Admin page products
+const SALES_KEY = 'sales';
+
+/* GET/SET FUNCTIONS */
+function getProducts(){ 
+  return JSON.parse(sessionStorage.getItem(SESSION_PRODUCTS_KEY)||'[]'); 
+}
+function setProducts(products){ 
+  sessionStorage.setItem(SESSION_PRODUCTS_KEY, JSON.stringify(products));
+}
+function getSales(){ return JSON.parse(sessionStorage.getItem(SALES_KEY)||'[]'); }
+function setSales(sales){ sessionStorage.setItem(SALES_KEY, JSON.stringify(sales)); }
+
+/* MERGE ADMIN PRODUCTS INTO SESSION */
+function syncAdminProducts(){
+  const adminProducts = JSON.parse(sessionStorage.getItem(ADMIN_PRODUCTS_KEY)||'[]');
+  let sessionProducts = getProducts();
+
+  // merge new products (by ID) without losing session quantities
+  adminProducts.forEach(p=>{
+    const exist = sessionProducts.find(sp=>sp.id===p.id);
+    if(!exist){
+      sessionProducts.push({...p}); // new product
+    }
+  });
+
+  setProducts(sessionProducts);
+}
+
+/* RENDER PRODUCTS */
+function renderProducts(){
+  syncAdminProducts();
+  const products = getProducts();
+  const name = document.getElementById('searchName').value.toLowerCase();
+  const cat = document.getElementById('filterCategory').value;
+
+  const list = products.filter(p=> (p.name||'').toLowerCase().includes(name) && (cat?p.category===cat:true) );
+  const c = document.getElementById('tableContainer');
+  if(!list.length){ c.innerHTML='<div class="message">No products found</div>'; return; }
+
+  let html=`<table><thead>
+    <tr><th>ID</th><th>Name</th><th>Category</th><th>Stock</th><th>Price (₦)</th><th>Qty</th><th>Action</th></tr></thead><tbody>`;
+
+  list.forEach(p=>{
+    html+=`<tr>
+      <td>${p.id}</td><td>${p.name||''}</td><td>${p.category||''}</td>
+      <td>${p.quantity||0}</td><td>${Number(p.price||0).toLocaleString()}</td>
+      <td><input type="number" min="1" max="${p.quantity||0}" id="q${p.id}" style="width:60px"></td>
+      <td><button onclick="sell(${p.id})">Sell</button></td>
+    </tr>`;
+  });
+
+  html+='</tbody></table>';
+  c.innerHTML=html;
+}
+
+/* SELL PRODUCT */
+function sell(id){
+  let products = getProducts();
+  let sales = getSales();
+  const p = products.find(x=>x.id===id);
+  if(!p) return alert('Product missing');
+
+  const qty = Number(document.getElementById('q'+id).value);
+  if(!qty||qty<1) return alert('Invalid quantity');
+  if(qty>p.quantity) return alert('Insufficient stock');
+
+  p.quantity -= qty;
+  setProducts(products);
+
+  sales.push({id:Date.now(), product:p.name, quantity:qty, price:Number(p.price), staff:username, date:Date.now()});
+  setSales(sales);
+
+  alert(`✅ Sold ${qty} × ${p.name}`);
+  renderProducts();
+}
+
+/* LIVE UPDATE FROM ADMIN PAGE */
+// Whenever admin adds a product, write a "signal" in localStorage
+window.addEventListener('storage', e=>{
+  if(e.key==='adminProductSignal'){
+    renderProducts();
+  }
+});
+
+// POLL every 1 sec to pick up admin products in same tab
+setInterval(renderProducts,1000);
+
+renderProducts();
+</script>
+</body>
+</html>

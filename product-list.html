@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini-Store - Add Product</title>
+<style>
+body { font-family:'Segoe UI',sans-serif; margin:0; padding:0; background:#f0f4f8; transition:0.5s; }
+body.dark { background:#1e1e1e; color:#fff; }
+header { background:#4facfe; color:white; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; }
+body.dark header { background:#00bfff; }
+header h1 { margin:0; font-size:24px; }
+.theme-toggle { cursor:pointer; font-size:16px; }
+main { padding:20px; max-width:700px; margin:auto; }
+.form-container { background:white; padding:20px; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.1); transition:0.5s; }
+body.dark .form-container { background:#2b2b2b; color:#fff; }
+.form-container input, .form-container select { width:95%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #ccc; font-size:16px; background:inherit; color:inherit; transition:0.3s; }
+body.dark .form-container input, body.dark .form-container select { border:1px solid #555; }
+.form-container button { padding:12px 20px; background:#4facfe; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer; transition:0.3s; }
+.form-container button:hover { background:#00f2fe; color:#333; }
+body.dark .form-container button:hover { color:#fff; }
+.error { color:red; margin-top:5px; }
+.success { color:green; margin-top:5px; }
+table { width:100%; border-collapse: collapse; margin-top:20px; }
+th, td { border:1px solid #ccc; padding:10px; text-align:left; }
+body.dark th, body.dark td { border-color:#555; }
+th { background:#4facfe; color:white; }
+body.dark th { background:#00bfff; }
+</style>
+</head>
+<body>
+<header>
+<h1>Add Product</h1>
+<div class="theme-toggle" onclick="toggleTheme()">🌙 Theme</div>
+</header>
+<main>
+<div id="welcome" style="margin-bottom:15px; font-size:16px;"></div>
+
+<div class="form-container" id="form-container">
+<h2>Admin: Add / Upload Product</h2>
+<input type="text" id="product-name" placeholder="Product Name" />
+<input type="number" id="product-quantity" placeholder="Quantity" min="1" />
+<input type="number" id="product-price" placeholder="Price (₦)" min="1" />
+<select id="product-category">
+  <option value="">Select Category</option>
+  <option value="Dairy">Dairy</option>
+  <option value="Bakery">Bakery</option>
+  <option value="Beverages">Beverages</option>
+  <option value="Grains">Grains</option>
+  <option value="Other">Other</option>
+</select>
+<button onclick="addProduct()">Add Product</button>
+<div class="error" id="error"></div>
+<div class="success" id="success"></div>
+</div>
+
+<h2>Current Stock</h2>
+<table id="stock-table">
+<thead>
+<tr>
+<th>ID</th>
+<th>Product Name</th>
+<th>Category</th>
+<th>Quantity</th>
+<th>Price (₦)</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<div class="links" style="margin-top:20px;">
+<a href="dashboard.html">← Back to Dashboard</a>
+</div>
+</main>
+
+<script>
+// --------------- Theme toggle
+function toggleTheme() {
+  document.body.classList.toggle('dark');
+  sessionStorage.setItem('darkMode', document.body.classList.contains('dark'));
+}
+if(sessionStorage.getItem('darkMode')==='true') document.body.classList.add('dark');
+
+// --------------- Admin check
+const role = sessionStorage.getItem('role') || 'admin';
+const username = sessionStorage.getItem('username') || 'Admin';
+document.getElementById('welcome').textContent = `Welcome, ${username.toUpperCase()} (${role.toUpperCase()})`;
+if(role !== 'admin'){
+  document.getElementById('form-container').innerHTML = '<p style="color:red;">Access Denied. Admin Only.</p>';
+}
+
+// --------------- Load products from sessionStorage
+let products = JSON.parse(sessionStorage.getItem('products') || '[]');
+
+// Initialize with default if empty
+if(!Array.isArray(products) || products.length === 0){
+  products = [
+    {id:1, name:'Milk', category:'Dairy', quantity:5, price:200},
+    {id:2, name:'Bread', category:'Bakery', quantity:2, price:150}
+  ];
+  sessionStorage.setItem('products', JSON.stringify(products));
+}
+
+// --------------- Render stock
+function renderStock(){
+  products = JSON.parse(sessionStorage.getItem('products') || '[]');
+  const tbody = document.querySelector('#stock-table tbody');
+  tbody.innerHTML = '';
+  products.forEach(p=>{
+    // Ensure all values are valid
+    const qty = isNaN(p.quantity) ? 0 : p.quantity;
+    const price = isNaN(p.price) ? 0 : p.price;
+    const name = p.name || 'Unnamed';
+    const category = p.category || 'Other';
+    const id = p.id || 0;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${id}</td><td>${name}</td><td>${category}</td><td>${qty}</td><td>₦${price}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+renderStock();
+
+// --------------- Add product
+function addProduct(){
+  const name = document.getElementById('product-name').value.trim();
+  const qty = parseInt(document.getElementById('product-quantity').value);
+  const price = parseFloat(document.getElementById('product-price').value);
+  const category = document.getElementById('product-category').value;
+  const errorDiv = document.getElementById('error');
+  const successDiv = document.getElementById('success');
+  errorDiv.textContent = '';
+  successDiv.textContent = '';
+
+  if(!name || isNaN(qty) || isNaN(price) || !category){
+    errorDiv.textContent = 'Please fill all fields correctly';
+    return;
+  }
+
+  // Unique ID
+  const id = products.length > 0 ? Math.max(...products.map(p=>p.id || 0)) + 1 : 1;
+
+  const newProduct = {id, name, category, quantity: qty, price};
+
+  // Add to array & save
+  products.push(newProduct);
+  sessionStorage.setItem('products', JSON.stringify(products));
+
+  renderStock();
+  successDiv.textContent = `${name} added successfully!`;
+
+  // Clear inputs
+  document.getElementById('product-name').value='';
+  document.getElementById('product-quantity').value='';
+  document.getElementById('product-price').value='';
+  document.getElementById('product-category').value='';
+
+  // Trigger storage event for other pages
+  window.dispatchEvent(new Event('storage'));
+}
+</script>
+</body>
+</html>
