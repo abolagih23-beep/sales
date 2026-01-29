@@ -65,12 +65,12 @@ const username = sessionStorage.getItem('username') || 'staff';
 const role = sessionStorage.getItem('role') || 'staff';
 document.getElementById('welcome').textContent = `Welcome, ${username} (${role})`;
 
-/* SESSION STORAGE KEYS */
-const SESSION_PRODUCTS_KEY = 'recordProducts'; // Runtime for this page
-const ADMIN_PRODUCTS_KEY = 'products';          // Admin page products
+/* STORAGE KEYS */
+const SESSION_PRODUCTS_KEY = 'recordProducts';
+const ADMIN_PRODUCTS_KEY = 'products';
 const SALES_KEY = 'sales';
 
-/* GET/SET FUNCTIONS */
+/* GET/SET HELPERS */
 function getProducts(){ 
   return JSON.parse(sessionStorage.getItem(SESSION_PRODUCTS_KEY)||'[]'); 
 }
@@ -80,16 +80,14 @@ function setProducts(products){
 function getSales(){ return JSON.parse(sessionStorage.getItem(SALES_KEY)||'[]'); }
 function setSales(sales){ sessionStorage.setItem(SALES_KEY, JSON.stringify(sales)); }
 
-/* MERGE ADMIN PRODUCTS INTO SESSION */
+/* MERGE ADMIN PRODUCTS */
 function syncAdminProducts(){
   const adminProducts = JSON.parse(sessionStorage.getItem(ADMIN_PRODUCTS_KEY)||'[]');
   let sessionProducts = getProducts();
 
-  // merge new products (by ID) without losing session quantities
   adminProducts.forEach(p=>{
-    const exist = sessionProducts.find(sp=>sp.id===p.id);
-    if(!exist){
-      sessionProducts.push({...p}); // new product
+    if(!sessionProducts.find(sp=>sp.id===p.id)){
+      sessionProducts.push({...p});
     }
   });
 
@@ -103,14 +101,18 @@ function renderProducts(){
   const name = document.getElementById('searchName').value.toLowerCase();
   const cat = document.getElementById('filterCategory').value;
 
-  const list = products.filter(p=> (p.name||'').toLowerCase().includes(name) && (cat?p.category===cat:true) );
-  const c = document.getElementById('tableContainer');
-  if(!list.length){ c.innerHTML='<div class="message">No products found</div>'; return; }
+  const filtered = products.filter(p=> (p.name||'').toLowerCase().includes(name) && (cat?p.category===cat:true) );
+  const container = document.getElementById('tableContainer');
+
+  if(!filtered.length){
+    container.innerHTML = '<div class="message">No products found</div>';
+    return;
+  }
 
   let html=`<table><thead>
     <tr><th>ID</th><th>Name</th><th>Category</th><th>Stock</th><th>Price (₦)</th><th>Qty</th><th>Action</th></tr></thead><tbody>`;
 
-  list.forEach(p=>{
+  filtered.forEach(p=>{
     html+=`<tr>
       <td>${p.id}</td><td>${p.name||''}</td><td>${p.category||''}</td>
       <td>${p.quantity||0}</td><td>${Number(p.price||0).toLocaleString()}</td>
@@ -120,7 +122,7 @@ function renderProducts(){
   });
 
   html+='</tbody></table>';
-  c.innerHTML=html;
+  container.innerHTML = html;
 }
 
 /* SELL PRODUCT */
@@ -144,17 +146,14 @@ function sell(id){
   renderProducts();
 }
 
-/* LIVE UPDATE FROM ADMIN PAGE */
-// Whenever admin adds a product, write a "signal" in localStorage
+/* LISTEN FOR ADMIN SIGNAL */
 window.addEventListener('storage', e=>{
   if(e.key==='adminProductSignal'){
     renderProducts();
   }
 });
 
-// POLL every 1 sec to pick up admin products in same tab
-setInterval(renderProducts,1000);
-
+// INITIAL RENDER
 renderProducts();
 </script>
 </body>
