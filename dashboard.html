@@ -2,52 +2,39 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mini-Mart Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body { font-family:'Segoe UI',sans-serif; margin:0; padding:0; background:#f0f4f8; transition: background 0.5s,color 0.5s; }
-body.dark { background:#1e1e1e; color:#fff; }
-
-header { background:#4facfe; color:white; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; }
-body.dark header { background:#00bfff; }
-header h1 { margin:0; font-size:24px; }
-
-.header-right { display:flex; align-items:center; gap:15px; }
-.theme-toggle { cursor:pointer; font-size:16px; }
-.logout-btn { cursor:pointer; padding:6px 12px; border-radius:6px; background:#ff6b6b; border:none; font-weight:bold; transition:background 0.3s; color:white; }
-.logout-btn:hover { background:#ff4d4d; }
-
-main { padding:20px; max-width:1000px; margin:auto; }
-
-#welcome { margin-bottom:20px; font-size:18px; }
-
-.cards { display:flex; flex-wrap:wrap; gap:20px; }
-.card { flex:1 1 200px; background:white; border-radius:12px; padding:20px; box-shadow:0 8px 20px rgba(0,0,0,0.1); transition: background 0.5s,color 0.5s; }
-body.dark .card { background:#2b2b2b; color:#fff; }
-
-.card h2 { margin:0; font-size:20px; color:#333; }
-body.dark .card h2 { color:#fff; }
-.card p { font-size:16px; margin:5px 0 0; }
-
-.alerts { margin-top:20px; }
-.alert { background:#ff6b6b; color:white; padding:10px; border-radius:8px; margin-bottom:10px; }
-body.dark .alert { background:#ff4d4d; }
-
-.links { margin-top:30px; display:flex; gap:15px; flex-wrap:wrap; }
-.links a { padding:10px 15px; background:#4facfe; color:white; border-radius:8px; text-decoration:none; font-weight:bold; transition:background 0.3s; }
-.links a:hover { background:#00f2fe; color:#333; }
-body.dark .links a { background:#00bfff; }
-body.dark .links a:hover { background:#4facfe; color:#fff; }
+body{font-family:Segoe UI,sans-serif;margin:0;background:#f0f4f8;transition:.3s}
+body.dark{background:#1e1e1e;color:#fff}
+header{background:#4facfe;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
+body.dark header{background:#00bfff}
+main{padding:20px;max-width:1200px;margin:auto}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+.card{background:#fff;border-radius:14px;padding:20px;box-shadow:0 8px 20px rgba(0,0,0,.1)}
+body.dark .card{background:#2b2b2b}
+.card h3{margin:0;font-size:14px;color:#666}
+body.dark .card h3{color:#ccc}
+.card p{font-size:24px;font-weight:bold;margin-top:8px}
+.alerts{margin-top:25px}
+.alert{padding:12px;border-radius:10px;margin-bottom:10px;color:#fff;font-weight:bold}
+.low{background:#ff6b6b}
+.high{background:#ffa500}
+.links{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
+.links a{padding:10px 15px;background:#4facfe;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold}
+body.dark .links a{background:#00bfff}
+.links a:hover{background:#00f2fe;color:#333}
 </style>
 </head>
 
 <body>
+
 <header>
-  <h1>Mini-Mart Dashboard</h1>
-  <div class="header-right">
-    <span class="theme-toggle" onclick="toggleTheme()">🌙 Theme</span>
-    <button class="logout-btn" onclick="logout()">Logout</button>
+  <h2>📊 Mini-Mart Dashboard</h2>
+  <div>
+    <span style="cursor:pointer" onclick="toggleTheme()">🌙 Theme</span>
+    <button onclick="logout()" style="margin-left:10px;background:#ff6b6b;border:none;color:#fff;padding:6px 12px;border-radius:6px">Logout</button>
   </div>
 </header>
 
@@ -59,116 +46,133 @@ body.dark .links a:hover { background:#4facfe; color:#fff; }
 </main>
 
 <script>
-/* ------------------ Theme */
-function toggleTheme() {
-  document.body.classList.toggle('dark');
-  sessionStorage.setItem('darkMode', document.body.classList.contains('dark'));
+/* ---------- THEME ---------- */
+if(sessionStorage.getItem('darkMode')==='true') document.body.classList.add('dark')
+function toggleTheme(){
+  document.body.classList.toggle('dark')
+  sessionStorage.setItem('darkMode', document.body.classList.contains('dark'))
 }
-if(sessionStorage.getItem('darkMode')==='true') document.body.classList.add('dark');
 
-/* ------------------ Logout */
-function logout(){
-  if(confirm('Are you sure you want to logout?')){
-    sessionStorage.clear();
-    window.location.href='index.html';
+/* ---------- AUTH ---------- */
+const username = sessionStorage.getItem('username')
+const role = sessionStorage.getItem('role') || 'staff'
+if(!username){
+  alert('Login required')
+  location.href='index.html'
+}
+document.getElementById('welcome').textContent =
+  `Welcome, ${username} (${role.toUpperCase()})`
+
+/* ---------- STORAGE HELPERS ---------- */
+const getProducts = ()=>JSON.parse(sessionStorage.getItem('products') || '[]')
+const setProducts = (arr)=>sessionStorage.setItem('products', JSON.stringify(arr))
+const getSales = ()=>JSON.parse(sessionStorage.getItem('sales') || '[]')
+const setSales = (arr)=>sessionStorage.setItem('sales', JSON.stringify(arr))
+
+/* ---------- INITIAL DATA ---------- */
+if(!sessionStorage.getItem('products')){
+  setProducts([
+    {id:1,name:'Milk',category:'Dairy',quantity:20,costPrice:150,sellingPrice:200},
+    {id:2,name:'Bread',category:'Bakery',quantity:15,costPrice:100,sellingPrice:150},
+    {id:3,name:'Eggs',category:'Dairy',quantity:30,costPrice:10,sellingPrice:15},
+    {id:4,name:'Juice',category:'Beverages',quantity:10,costPrice:250,sellingPrice:300},
+    {id:5,name:'Rice',category:'Grains',quantity:50,costPrice:400,sellingPrice:500}
+  ])
+}
+if(!sessionStorage.getItem('sales')){
+  setSales([])
+}
+
+/* ---------- DASHBOARD LOGIC ---------- */
+function renderDashboard(){
+  const products = getProducts()
+  const sales = getSales()
+
+  const cardsDiv = document.getElementById('cards')
+  const alertsDiv = document.getElementById('alerts')
+  cardsDiv.innerHTML = ''
+  alertsDiv.innerHTML = ''
+
+  /* ---- CALCULATE METRICS ---- */
+  const totalRevenue = sales.reduce((a,s)=>a + (Number(s.sellingPrice) || 0) * (Number(s.quantity) || 0),0)
+  const totalProfit = sales.reduce((a,s)=>a + (Number(s.profit) || 0),0)
+  const itemsSold = sales.reduce((a,s)=>a + (Number(s.quantity) || 0),0)
+  const totalStockQty = products.reduce((a,p)=>a + (Number(p.quantity) || 0),0)
+
+  const lowStock = products.filter(p=>p.quantity <= 5)
+
+  const demandMap = {}
+  sales.forEach(s=>{
+    demandMap[s.productName] = (demandMap[s.productName] || 0) + Number(s.quantity || 0)
+  })
+  const highDemand = Object.keys(demandMap).filter(p=>demandMap[p] >= 5)
+
+  /* ---- CARDS ---- */
+  const data = [
+    ['Total Revenue (₦)', totalRevenue.toLocaleString()],
+    ...(role==='admin'? [['Total Profit (₦)', totalProfit.toLocaleString()]] : []),
+    ['Items Sold', itemsSold],
+    ['Total Stock Qty', totalStockQty],
+    ['Low Stock Items', lowStock.length],
+    ['High Demand Items', highDemand.length]
+  ]
+  data.forEach(d=>{
+    const div = document.createElement('div')
+    div.className='card'
+    div.innerHTML = `<h3>${d[0]}</h3><p>${d[1]}</p>`
+    cardsDiv.appendChild(div)
+  })
+
+  /* ---- ALERTS ---- */
+  if(lowStock.length){
+    lowStock.forEach(p=>{
+      alertsDiv.innerHTML+=`<div class="alert low">⚠️ Low Stock: ${p.name} (${p.quantity})</div>`
+    })
+  }
+  if(highDemand.length){
+    highDemand.forEach(p=>{
+      alertsDiv.innerHTML+=`<div class="alert high">🔥 High Demand: ${p} (${demandMap[p]} sold)</div>`
+    })
+  }
+  if(!lowStock.length && !highDemand.length){
+    alertsDiv.innerHTML='<div>No alerts currently.</div>'
   }
 }
 
-/* ------------------ User */
-const userRole = sessionStorage.getItem('role');
-const username = sessionStorage.getItem('username');
-if(!username){
-  alert('Please login first.');
-  window.location.href='index.html';
+/* ---------- LINKS ---------- */
+const linksDiv = document.getElementById('links')
+const adminLinks = [
+  ['Add Product','add-product.html'],
+  ['Product List','product-list.html'],
+  ['Record Sale','record-sale.html'],
+  ['Reports','reports.html'],
+  ['Staff Accountability','staff-accountability.html']
+]
+const staffLinks = [
+  ['Product List','product-list.html'],
+  ['Record Sale','record-sale.html']
+]
+;(role==='admin'?adminLinks:staffLinks).forEach(l=>{
+  const a = document.createElement('a')
+  a.href = l[1]
+  a.textContent = l[0]
+  linksDiv.appendChild(a)
+})
+
+/* ---------- LOGOUT ---------- */
+function logout(){
+  if(confirm('Logout now?')){
+    // Only remove session info, NOT products/sales
+    sessionStorage.removeItem('username')
+    sessionStorage.removeItem('role')
+    location.href='index.html'
+  }
 }
 
-/* ------------------ Welcome */
-const welcomeDiv = document.getElementById('welcome');
-function updateWelcome(){
-  welcomeDiv.textContent = `Welcome, ${username} (${userRole.toUpperCase()}) - ${new Date().toLocaleString()}`;
-}
-updateWelcome();
-setInterval(updateWelcome,60000);
-
-/* ------------------ Init Storage */
-if(!sessionStorage.getItem('products')){
-  sessionStorage.setItem('products',JSON.stringify([
-    {id:1,name:'Milk',category:'Dairy',quantity:10,price:200},
-    {id:2,name:'Bread',category:'Bakery',quantity:15,price:150},
-    {id:3,name:'Eggs',category:'Dairy',quantity:30,price:15},
-    {id:4,name:'Juice',category:'Beverages',quantity:5,price:300},
-    {id:5,name:'Rice',category:'Grains',quantity:20,price:500}
-  ]));
-}
-if(!sessionStorage.getItem('sales')){
-  sessionStorage.setItem('sales','[]');
-}
-
-/* ------------------ Dashboard Render */
-const cardsDiv=document.getElementById('cards');
-const alertsDiv=document.getElementById('alerts');
-
-function renderDashboard(){
-  const products=JSON.parse(sessionStorage.getItem('products')||'[]');
-  const sales=JSON.parse(sessionStorage.getItem('sales')||'[]');
-
-  cardsDiv.innerHTML='';
-  alertsDiv.innerHTML='';
-
-  const totalSales=sales.reduce((a,s)=>a+s.price*s.quantity,0);
-  const totalItemsSold=sales.reduce((a,s)=>a+s.quantity,0);
-  const lowStock=products.filter(p=>p.quantity<=3);
-  const demand=sales.reduce((a,s)=>{a[s.product]=(a[s.product]||0)+s.quantity;return a;},{});
-  const highDemand=Object.keys(demand).filter(p=>demand[p]>=2);
-
-  [
-    ['Total Sales (₦)',totalSales.toLocaleString()],
-    ['Items Sold',totalItemsSold],
-    ['Products in Stock',products.length],
-    ['Low Stock Items',lowStock.length],
-    ['High Demand Items',highDemand.length]
-  ].forEach(c=>{
-    const div=document.createElement('div');
-    div.className='card';
-    div.innerHTML=`<h2>${c[0]}</h2><p>${c[1]}</p>`;
-    cardsDiv.appendChild(div);
-  });
-
-  if(lowStock.length)
-    lowStock.forEach(p=>alertsDiv.innerHTML+=`<div class="alert">⚠️ Low Stock: ${p.name} (${p.quantity})</div>`);
-  if(highDemand.length)
-    highDemand.forEach(p=>alertsDiv.innerHTML+=`<div class="alert">🔥 High Demand: ${p}</div>`);
-  if(!lowStock.length && !highDemand.length)
-    alertsDiv.innerHTML='<div>No low-stock or high-demand items currently.</div>';
-}
-renderDashboard();
-
-/* ------------------ Links */
-const linksDiv=document.getElementById('links');
-
-const adminLinks=[
-  {text:'Add Product',href:'add-product.html'},
-  {text:'Product List',href:'product-list.html'},
-  {text:'Record Sale',href:'record-sale.html'},  <!-- ✅ ADDED -->
-  {text:'Low Stock Alerts',href:'low-stock.html'},
-  {text:'Staff Accountability',href:'staff-accountability.html'},
-  {text:'Reports',href:'reports.html'}
-];
-
-const staffLinks=[
-  {text:'Product List',href:'product-list.html'},
-  {text:'Record Sale',href:'record-sale.html'}
-];
-
-(userRole==='admin'?adminLinks:staffLinks).forEach(l=>{
-  const a=document.createElement('a');
-  a.href=l.href;
-  a.textContent=l.text;
-  linksDiv.appendChild(a);
-});
-
-/* ------------------ Live Updates */
-window.addEventListener('storage',renderDashboard);
+/* ---------- LIVE UPDATE ---------- */
+window.addEventListener('storage', renderDashboard)
+renderDashboard()
 </script>
+
 </body>
 </html>

@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mini-Mart – Staff Accountability</title>
-
 <style>
 body{font-family:'Segoe UI',sans-serif;margin:0;background:#f0f4f8;transition:.5s}
 body.dark{background:#1e1e1e;color:#fff}
@@ -19,10 +18,11 @@ header h1{margin:0;font-size:22px}
   border:none;font-weight:bold
 }
 .theme-toggle{background:#fff;color:#333}
+.theme-toggle:hover{background:#e0e0e0}
 .logout-btn{background:#ff6b6b;color:#fff}
 .logout-btn:hover{background:#ff4d4d}
 
-main{padding:20px;max-width:1000px;margin:auto}
+main{padding:20px;max-width:1200px;margin:auto}
 
 .filters{margin-bottom:15px}
 .filters select{
@@ -38,7 +38,7 @@ table{
 }
 body.dark table{background:#2b2b2b}
 
-th,td{padding:12px;border-bottom:1px solid #ddd;text-align:left}
+th,td{padding:12px;border-bottom:1px solid #ddd;text-align:left;font-size:14px}
 body.dark th,body.dark td{border-bottom:1px solid #444}
 
 th{background:#4facfe;color:#fff}
@@ -55,6 +55,7 @@ body.dark .no-sales{color:#ccc}
 }
 .links a:hover{background:#00f2fe;color:#333}
 body.dark .links a{background:#00bfff}
+body.dark .links a:hover{background:#4facfe;color:#fff}
 </style>
 </head>
 
@@ -68,7 +69,6 @@ body.dark .links a{background:#00bfff}
 </header>
 
 <main>
-
   <div class="filters">
     <select id="filterStaff"></select>
   </div>
@@ -80,73 +80,69 @@ body.dark .links a{background:#00bfff}
     <a href="product-list.html">Product List</a>
     <a href="add-product.html">Add Product</a>
     <a href="record-sale.html">Record Sale</a>
+    <a href="reports.html">Reports</a>
   </div>
-
 </main>
 
 <script>
-/* ===============================
-   THEME
-================================ */
+// ===============================
+// THEME
+// ===============================
 if(sessionStorage.getItem('darkMode')==='true'){
-  document.body.classList.add('dark')
+  document.body.classList.add('dark');
 }
 function toggleTheme(){
-  document.body.classList.toggle('dark')
-  sessionStorage.setItem('darkMode',document.body.classList.contains('dark'))
+  document.body.classList.toggle('dark');
+  sessionStorage.setItem('darkMode', document.body.classList.contains('dark'));
 }
 
-/* ===============================
-   AUTH CHECK (ADMIN ONLY)
-================================ */
-const role = sessionStorage.getItem('role')
-const username = sessionStorage.getItem('username')
-
+// ===============================
+// AUTH CHECK (ADMIN ONLY)
+// ===============================
+const username = sessionStorage.getItem('username');
+const role = sessionStorage.getItem('role');
 if(!username || role!=='admin'){
-  alert('Access denied. Admin only.')
-  window.location.href='dashboard.html'
+  alert('Access denied. Admin only.');
+  window.location.href='dashboard.html';
 }
 
-/* ===============================
-   LOAD SALES
-================================ */
-function getSales(){
-  return JSON.parse(sessionStorage.getItem('sales') || '[]')
-}
+// ===============================
+// DATA HELPERS
+// ===============================
+function getSales(){ return JSON.parse(sessionStorage.getItem('sales')||'[]'); }
+function getProducts(){ return JSON.parse(sessionStorage.getItem('products')||'[]'); }
 
-/* ===============================
-   STAFF FILTER
-================================ */
-const filterStaff=document.getElementById('filterStaff')
-
+// ===============================
+// STAFF FILTER
+// ===============================
+const filterStaff = document.getElementById('filterStaff');
 function populateStaffFilter(){
-  const sales=getSales()
-  const staff=new Set(sales.map(s=>s.staff))
-
-  filterStaff.innerHTML='<option value="">All Staff</option>'
-  staff.forEach(name=>{
-    const o=document.createElement('option')
-    o.value=name
-    o.textContent=name
-    filterStaff.appendChild(o)
-  })
+  const sales = getSales();
+  const staffSet = new Set(sales.map(s=>s.staff));
+  filterStaff.innerHTML = '<option value="">All Staff</option>';
+  staffSet.forEach(name=>{
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    filterStaff.appendChild(opt);
+  });
 }
+filterStaff.addEventListener('change', renderSales);
 
-filterStaff.addEventListener('change',renderSales)
-
-/* ===============================
-   RENDER SALES
-================================ */
+// ===============================
+// RENDER SALES TABLE
+// ===============================
 function renderSales(){
-  const sales=getSales()
-  const staffFilter=filterStaff.value
-  const container=document.getElementById('salesContainer')
+  const sales = getSales();
+  const products = getProducts();
+  const staffFilter = filterStaff.value;
+  const container = document.getElementById('salesContainer');
 
-  const filtered=sales.filter(s=>staffFilter ? s.staff===staffFilter : true)
+  const filtered = sales.filter(s=>staffFilter ? s.staff === staffFilter : true);
 
   if(filtered.length===0){
-    container.innerHTML='<div class="no-sales">No sales recorded.</div>'
-    return
+    container.innerHTML='<div class="no-sales">No sales recorded.</div>';
+    return;
   }
 
   let html=`<table>
@@ -156,52 +152,60 @@ function renderSales(){
         <th>Product</th>
         <th>Qty</th>
         <th>Price (₦)</th>
+        <th>Cost (₦)</th>
+        <th>Profit (₦)</th>
         <th>Total (₦)</th>
         <th>Date</th>
+        <th>Day</th>
       </tr>
-    </thead><tbody>`
+    </thead><tbody>`;
 
   filtered.forEach(s=>{
-    const qty=Number(s.quantity)||0
-    const price=Number(s.price)||0
-    const total=qty*price
-    const date=new Date(s.date)
+    const qty = Number(s.quantity||0);
+    const prod = products.find(p=>p.id===s.productId);
+    const price = prod?.sellingPrice||prod?.price||0;
+    const cost = prod?.costPrice||prod?.cost||0;
+    const profit = (price-cost)*qty;
+    const total = price*qty;
+    const date = new Date(s.date);
+    const day = date.toLocaleString('en-US',{weekday:'long'});
 
-    html+=`
-    <tr>
+    html += `<tr>
       <td>${s.staff}</td>
-      <td>${s.product}</td>
+      <td>${prod?.name || s.name}</td>
       <td>${qty}</td>
-      <td>${price.toLocaleString()}</td>
-      <td>${total.toLocaleString()}</td>
+      <td>${Number(price).toLocaleString()}</td>
+      <td>${Number(cost).toLocaleString()}</td>
+      <td>${Number(profit).toLocaleString()}</td>
+      <td>${Number(total).toLocaleString()}</td>
       <td>${date.toLocaleString()}</td>
-    </tr>`
-  })
+      <td>${day}</td>
+    </tr>`;
+  });
 
-  html+='</tbody></table>'
-  container.innerHTML=html
+  html += '</tbody></table>';
+  container.innerHTML = html;
 }
 
-/* ===============================
-   LOGOUT
-================================ */
+// ===============================
+// LOGOUT
+// ===============================
 function logout(){
   if(confirm('Logout now?')){
-    sessionStorage.clear()
-    window.location.href='index.html'
+    sessionStorage.clear();
+    window.location.href='index.html';
   }
 }
 
-/* ===============================
-   INIT + LIVE UPDATE
-================================ */
-populateStaffFilter()
-renderSales()
-
+// ===============================
+// INIT + LIVE SYNC
+// ===============================
+populateStaffFilter();
+renderSales();
 window.addEventListener('storage',()=>{
-  populateStaffFilter()
-  renderSales()
-})
+  populateStaffFilter();
+  renderSales();
+});
 </script>
 </body>
 </html>

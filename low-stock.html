@@ -4,92 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mini-Mart – Low Stock & High Demand</title>
-
 <style>
-body{
-  font-family:'Segoe UI',sans-serif;
-  margin:0;
-  background:#f0f4f8;
-  transition:background .5s,color .5s;
-}
+body{font-family:'Segoe UI',sans-serif;margin:0;padding:0;background:#f0f4f8;transition:background .5s,color .5s;}
 body.dark{background:#1e1e1e;color:#fff}
-
-header{
-  background:#4facfe;
-  color:#fff;
-  padding:15px 20px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
+header{background:#4facfe;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;}
 body.dark header{background:#00bfff}
-
 header h1{margin:0;font-size:22px}
-
-.theme-toggle,.logout-btn{
-  cursor:pointer;
-  font-size:15px;
-  padding:6px 12px;
-  border-radius:6px;
-  border:none;
-  font-weight:bold;
-}
-
+.theme-toggle,.logout-btn{cursor:pointer;font-size:15px;padding:6px 12px;border-radius:6px;border:none;font-weight:bold;}
 .theme-toggle{background:#fff;color:#333}
 .theme-toggle:hover{background:#e0e0e0}
-
 .logout-btn{background:#ff6b6b;color:#fff}
 .logout-btn:hover{background:#ff4d4d}
-
-main{
-  padding:20px;
-  max-width:900px;
-  margin:auto;
-}
-
-.alert-container{
-  display:flex;
-  flex-direction:column;
-  gap:15px;
-  margin-top:20px;
-}
-
-.alert-card{
-  padding:15px 20px;
-  border-radius:12px;
-  color:#fff;
-  box-shadow:0 6px 15px rgba(0,0,0,.15);
-  font-size:16px;
-}
-
+main{padding:20px;max-width:900px;margin:auto;}
+.alert-container{display:flex;flex-direction:column;gap:15px;margin-top:20px;}
+.alert-card{padding:15px 20px;border-radius:12px;color:#fff;box-shadow:0 6px 15px rgba(0,0,0,.15);font-size:16px;}
 .low-stock{background:#ff6b6b}
 .high-demand{background:#ffa500}
-
 body.dark .low-stock{background:#ff4d4d}
 body.dark .high-demand{background:#ff9500}
-
-.no-alerts{
-  font-size:16px;
-  margin-top:20px;
-  color:#555;
-}
+.no-alerts{font-size:16px;margin-top:20px;color:#555;}
 body.dark .no-alerts{color:#ccc}
-
-.links{
-  margin-top:25px;
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
-.links a{
-  padding:10px 15px;
-  background:#4facfe;
-  color:#fff;
-  border-radius:8px;
-  text-decoration:none;
-  font-weight:bold;
-}
+.links{margin-top:25px;display:flex;gap:10px;flex-wrap:wrap;}
+.links a{padding:10px 15px;background:#4facfe;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;}
 .links a:hover{background:#00f2fe;color:#333}
 body.dark .links a{background:#00bfff}
 body.dark .links a:hover{background:#4facfe;color:#fff}
@@ -111,23 +47,14 @@ body.dark .links a:hover{background:#4facfe;color:#fff}
 </main>
 
 <script>
-/* =============================
-   THEME
-============================= */
+// ---------------- THEME ----------------
 function toggleTheme(){
   document.body.classList.toggle('dark');
-  sessionStorage.setItem(
-    'darkMode',
-    document.body.classList.contains('dark')
-  );
+  sessionStorage.setItem('darkMode', document.body.classList.contains('dark'));
 }
-if(sessionStorage.getItem('darkMode')==='true'){
-  document.body.classList.add('dark');
-}
+if(sessionStorage.getItem('darkMode')==='true') document.body.classList.add('dark');
 
-/* =============================
-   AUTH / ACCESS CONTROL
-============================= */
+// ---------------- AUTH ----------------
 const role = sessionStorage.getItem('role');
 const username = sessionStorage.getItem('username');
 
@@ -140,9 +67,7 @@ if(role!=='admin'){
   window.location.href='dashboard.html';
 }
 
-/* =============================
-   LOGOUT
-============================= */
+// ---------------- LOGOUT ----------------
 function logout(){
   if(confirm('Are you sure you want to logout?')){
     sessionStorage.clear();
@@ -150,9 +75,7 @@ function logout(){
   }
 }
 
-/* =============================
-   SAFE DATA LOADERS
-============================= */
+// ---------------- SAFE DATA LOADERS ----------------
 function getProducts(){
   try{
     return JSON.parse(sessionStorage.getItem('products')) || [];
@@ -165,67 +88,48 @@ function getSales(){
   }catch{ return []; }
 }
 
+// ---------------- RENDER ALERTS ----------------
 const alertContainer=document.getElementById('alertContainer');
-
-/* =============================
-   RENDER ALERTS
-============================= */
 function renderAlerts(){
   alertContainer.innerHTML='';
-
   const products=getProducts();
   const sales=getSales();
 
-  /* LOW STOCK */
-  const lowStock=products.filter(p =>
-    Number(p.quantity) <= 3
-  );
-
+  // Low Stock (≤3)
+  const lowStock=products.filter(p => Number(p.quantity) <= 3);
   lowStock.forEach(p=>{
     const div=document.createElement('div');
     div.className='alert-card low-stock';
-    div.textContent=
-      `⚠️ Low Stock: ${p.name} — Only ${p.quantity} left`;
+    div.textContent=`⚠️ Low Stock: ${p.name} — Only ${p.quantity} left`;
     alertContainer.appendChild(div);
   });
 
-  /* HIGH DEMAND */
+  // High Demand (sold ≥5 units)
   const demandCount={};
   sales.forEach(s=>{
     if(!s.product || !s.quantity) return;
-    demandCount[s.product]=
-      (demandCount[s.product]||0)+Number(s.quantity);
+    demandCount[s.product]=(demandCount[s.product]||0)+Number(s.quantity);
   });
-
-  Object.keys(demandCount)
-    .filter(name=>demandCount[name]>=5)
-    .forEach(name=>{
-      const div=document.createElement('div');
-      div.className='alert-card high-demand';
-      div.textContent=
-        `🔥 High Demand: ${name} sold ${demandCount[name]} units`;
-      alertContainer.appendChild(div);
-    });
+  Object.keys(demandCount).filter(name=>demandCount[name]>=5).forEach(name=>{
+    const div=document.createElement('div');
+    div.className='alert-card high-demand';
+    div.textContent=`🔥 High Demand: ${name} sold ${demandCount[name]} units`;
+    alertContainer.appendChild(div);
+  });
 
   if(alertContainer.children.length===0){
     const div=document.createElement('div');
     div.className='no-alerts';
-    div.textContent=
-      'No low-stock or high-demand items currently.';
+    div.textContent='No low-stock or high-demand items currently.';
     alertContainer.appendChild(div);
   }
 }
-
 renderAlerts();
 
-/* =============================
-   REAL-TIME SYNC
-============================= */
-window.addEventListener('storage',renderAlerts);
+// ---------------- REAL-TIME SYNC ----------------
+window.addEventListener('storage', renderAlerts);
 
-/* =============================
-   NAVIGATION
-============================= */
+// ---------------- NAVIGATION ----------------
 const linksDiv=document.getElementById('links');
 [
   ['Dashboard','dashboard.html'],

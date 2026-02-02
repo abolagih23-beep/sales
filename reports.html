@@ -4,60 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mini-Mart – Reports</title>
-
 <style>
 body{font-family:'Segoe UI',sans-serif;margin:0;background:#f0f4f8;transition:.5s}
 body.dark{background:#1e1e1e;color:#fff}
-
-header{
-  background:#4facfe;color:#fff;padding:15px 20px;
-  display:flex;justify-content:space-between;align-items:center
-}
+header{background:#4facfe;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
 body.dark header{background:#00bfff}
 header h1{margin:0;font-size:22px}
-
-.theme-toggle,.logout-btn{
-  cursor:pointer;font-size:15px;margin-left:10px;
-  padding:6px 12px;border-radius:6px;border:none;font-weight:bold
-}
+.theme-toggle,.logout-btn{cursor:pointer;font-size:15px;margin-left:10px;padding:6px 12px;border-radius:6px;border:none;font-weight:bold}
 .theme-toggle{background:#fff;color:#333}
+.theme-toggle:hover{background:#e0e0e0}
 .logout-btn{background:#ff6b6b;color:#fff}
-
+.logout-btn:hover{background:#ff4d4d}
 main{padding:20px;max-width:1100px;margin:auto}
-
 .cards{display:flex;gap:15px;flex-wrap:wrap}
-.card{
-  flex:1 1 220px;background:#fff;padding:20px;border-radius:14px;
-  box-shadow:0 8px 20px rgba(0,0,0,.12)
-}
+.card{flex:1 1 220px;background:#fff;padding:20px;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.12)}
 body.dark .card{background:#2b2b2b}
 .card h3{margin:0 0 10px;font-size:15px;color:#555}
 body.dark .card h3{color:#ccc}
 .card p{font-size:22px;font-weight:bold;margin:0}
-
 .alerts{margin-top:25px}
-.alert-item{
-  padding:14px 16px;border-radius:10px;
-  margin-bottom:12px;color:#fff;font-weight:bold
-}
+.alert-item{padding:14px 16px;border-radius:10px;margin-bottom:12px;color:#fff;font-weight:bold}
 .low-stock{background:#ff6b6b}
 .high-demand{background:#ffa500}
-
-.export-btn{
-  margin-top:25px;padding:14px 22px;font-size:16px;
-  border:none;border-radius:10px;
-  background:#4facfe;color:#fff;cursor:pointer
-}
-
+body.dark .low-stock{background:#ff4d4d}
+body.dark .high-demand{background:#ff9500}
+.export-btn{margin-top:25px;padding:14px 22px;font-size:16px;border:none;border-radius:10px;background:#4facfe;color:#fff;cursor:pointer}
+.export-btn:hover{background:#00f2fe;color:#333}
+body.dark .export-btn{background:#00bfff}
+body.dark .export-btn:hover{background:#4facfe;color:#fff}
 .links{margin-top:25px;display:flex;gap:10px;flex-wrap:wrap}
-.links a{
-  padding:10px 16px;background:#4facfe;color:#fff;
-  border-radius:8px;text-decoration:none;font-weight:bold
-}
+.links a{padding:10px 16px;background:#4facfe;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold}
+.links a:hover{background:#00f2fe;color:#333}
+body.dark .links a{background:#00bfff}
+body.dark .links a:hover{background:#4facfe;color:#fff}
 </style>
 </head>
-
 <body>
+
 <header>
   <h1>📊 Reports Dashboard</h1>
   <div>
@@ -67,10 +50,10 @@ body.dark .card h3{color:#ccc}
 </header>
 
 <main>
-
   <div class="cards">
     <div class="card"><h3>Total Units Sold</h3><p id="totalUnits">0</p></div>
     <div class="card"><h3>Total Revenue (₦)</h3><p id="totalRevenue">0</p></div>
+    <div class="card"><h3>Total Profit (₦)</h3><p id="totalProfit">0</p></div>
     <div class="card"><h3>Low Stock Items</h3><p id="lowStockCount">0</p></div>
     <div class="card"><h3>High Demand Items</h3><p id="highDemandCount">0</p></div>
   </div>
@@ -86,126 +69,121 @@ body.dark .card h3{color:#ccc}
     <a href="record-sale.html">Record Sale</a>
     <a href="staff-accountability.html">Staff Accountability</a>
   </div>
-
 </main>
 
 <script>
-/* ===============================
-   THEME (SESSION)
-================================ */
-if(sessionStorage.getItem('darkMode')==='true'){
-  document.body.classList.add('dark')
-}
+// ---------- Theme ----------
+if(sessionStorage.getItem('darkMode')==='true') document.body.classList.add('dark');
 function toggleTheme(){
-  document.body.classList.toggle('dark')
-  sessionStorage.setItem('darkMode',
-    document.body.classList.contains('dark'))
+  document.body.classList.toggle('dark');
+  sessionStorage.setItem('darkMode', document.body.classList.contains('dark'));
 }
 
-/* ===============================
-   AUTH – ADMIN ONLY
-================================ */
-const role = sessionStorage.getItem('role')
-const username = sessionStorage.getItem('username')
-
+// ---------- Auth ----------
+const username = sessionStorage.getItem('username');
+const role = sessionStorage.getItem('role');
 if(!username || role!=='admin'){
-  alert('Access denied. Admin only.')
-  window.location.href='dashboard.html'
+  alert('Access denied. Admin only.');
+  window.location.href='dashboard.html';
 }
 
-/* ===============================
-   DATA LOADERS
-================================ */
-function getProducts(){
-  return JSON.parse(sessionStorage.getItem('products')||'[]')
-}
-function getSales(){
-  return JSON.parse(sessionStorage.getItem('sales')||'[]')
-}
+// ---------- Data Helpers ----------
+function getProducts(){ return JSON.parse(sessionStorage.getItem('products')||'[]'); }
+function getSales(){ return JSON.parse(sessionStorage.getItem('sales')||'[]'); }
 
-/* ===============================
-   RENDER REPORTS
-================================ */
+// ---------- Render Reports ----------
 function renderReports(){
-  const products = getProducts()
-  const sales = getSales()
+  const products = getProducts();
+  const sales = getSales();
 
-  const totalUnits = sales.reduce((a,s)=>a+(Number(s.quantity)||0),0)
-  const totalRevenue = sales.reduce(
-    (a,s)=>a+(Number(s.quantity)||0)*(Number(s.price)||0),0
-  )
+  // Total Units Sold
+  const totalUnits = sales.reduce((sum,s)=>sum + Number(s.quantity||0),0);
 
-  const lowStock = products.filter(p=>Number(p.quantity)<=3)
-
-  const demand={}
+  // Total Revenue & Profit
+  let totalRevenue = 0;
+  let totalProfit = 0;
+  const demandCount = {};
+  
   sales.forEach(s=>{
-    demand[s.product]=(demand[s.product]||0)+(Number(s.quantity)||0)
-  })
-  const highDemand = Object.keys(demand).filter(p=>demand[p]>=5)
+    const prod = products.find(p=>p.id===s.productId);
+    if(!prod) return;
+    const qty = Number(s.quantity||0);
+    const price = Number(prod.sellingPrice||0);
+    const cost = Number(prod.costPrice||0);
+    totalRevenue += price * qty;
+    totalProfit += (price - cost) * qty;
+    
+    // High demand
+    demandCount[prod.name] = (demandCount[prod.name]||0) + qty;
+  });
 
-  totalUnits.textContent = totalUnits
-  totalRevenue.textContent = totalRevenue.toLocaleString()
-  lowStockCount.textContent = lowStock.length
-  highDemandCount.textContent = highDemand.length
+  // Low stock
+  const lowStock = products.filter(p=>Number(p.quantity)<=5);
+  const highDemand = Object.keys(demandCount).filter(p=>demandCount[p]>=5);
 
-  const alertsDiv=document.getElementById('alerts')
-  alertsDiv.innerHTML=''
+  // Update cards
+  document.getElementById('totalUnits').textContent = totalUnits;
+  document.getElementById('totalRevenue').textContent = totalRevenue.toLocaleString();
+  document.getElementById('totalProfit').textContent = totalProfit.toLocaleString();
+  document.getElementById('lowStockCount').textContent = lowStock.length;
+  document.getElementById('highDemandCount').textContent = highDemand.length;
 
+  // Render alerts
+  const alertsDiv = document.getElementById('alerts');
+  alertsDiv.innerHTML = '';
   lowStock.forEach(p=>{
-    alertsDiv.innerHTML+=`
-      <div class="alert-item low-stock">
-        ⚠️ Low Stock: ${p.name} (${p.quantity} left)
-      </div>`
-  })
-
-  highDemand.forEach(p=>{
-    alertsDiv.innerHTML+=`
-      <div class="alert-item high-demand">
-        🔥 High Demand: ${p} (${demand[p]} sold)
-      </div>`
-  })
-
-  if(!alertsDiv.innerHTML){
-    alertsDiv.innerHTML='<div>No alerts currently.</div>'
+    const div = document.createElement('div');
+    div.className = 'alert-item low-stock';
+    div.textContent = `⚠️ Low Stock: ${p.name} (${p.quantity} left)`;
+    alertsDiv.appendChild(div);
+  });
+  highDemand.forEach(name=>{
+    const div = document.createElement('div');
+    div.className = 'alert-item high-demand';
+    div.textContent = `🔥 High Demand: ${name} (${demandCount[name]} sold)`;
+    alertsDiv.appendChild(div);
+  });
+  if(!alertsDiv.children.length){
+    const div = document.createElement('div');
+    div.textContent='No alerts currently.';
+    alertsDiv.appendChild(div);
   }
 }
 
-/* ===============================
-   EXPORT CSV
-================================ */
+// ---------- Export CSV ----------
 function exportCSV(){
-  const sales=getSales()
-  if(!sales.length){alert('No sales to export');return}
-
-  let csv="Staff,Product,Qty,Price,Total,Date\n"
+  const sales = getSales();
+  if(!sales.length){ alert('No sales to export'); return; }
+  const products = getProducts();
+  let csv = 'Staff,Product,Quantity,Selling Price,Cost Price,Profit,Total Amount,Date\n';
   sales.forEach(s=>{
-    const qty=Number(s.quantity)||0
-    const price=Number(s.price)||0
-    csv+=`${s.staff},${s.product},${qty},${price},${qty*price},${new Date(s.date).toLocaleString()}\n`
-  })
-
-  const blob=new Blob([csv],{type:'text/csv'})
-  const a=document.createElement('a')
-  a.href=URL.createObjectURL(blob)
-  a.download='sales_report.csv'
-  a.click()
+    const prod = products.find(p=>p.id===s.productId);
+    if(!prod) return;
+    const qty = Number(s.quantity||0);
+    const price = Number(prod.sellingPrice||0);
+    const cost = Number(prod.costPrice||0);
+    const profit = (price-cost)*qty;
+    const total = price*qty;
+    csv += `${s.staff},${prod.name},${qty},${price},${cost},${profit},${total},${new Date(s.date).toLocaleString()}\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sales_report.csv';
+  a.click();
 }
 
-/* ===============================
-   LOGOUT
-================================ */
+// ---------- Logout ----------
 function logout(){
   if(confirm('Logout now?')){
-    sessionStorage.clear()
-    window.location.href='index.html'
+    sessionStorage.clear();
+    window.location.href='index.html';
   }
 }
 
-/* ===============================
-   LIVE UPDATE
-================================ */
-window.addEventListener('storage',renderReports)
-renderReports()
+// ---------- Live Sync ----------
+window.addEventListener('storage', renderReports);
+renderReports();
 </script>
 </body>
 </html>
